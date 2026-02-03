@@ -80,36 +80,48 @@ Story:"""
 
 
 def generate_story(characters, place, story_type):
-    """Generate story using Gemma:2b model"""
+    """Generate story using Gemma:2b model with streaming output"""
     try:
         # Initialize Ollama with Gemma:2b model
-        llm = OllamaLLM(model="gemma:2b", temperature=0.8)
-        
+        llm = OllamaLLM(
+            model="gemma:2b",
+            temperature=0.8
+        )
+
         # Create prompt template
         prompt = create_story_prompt()
-        
-        # Create chain using pipe operator (new syntax)
+
+        # Create chain
         chain = prompt | llm
-        
-        # Format characters as comma-separated string
+
+        # Format characters
         characters_str = ", ".join(characters)
-        
+
         print("\n" + "=" * 60)
-        print("Generating your story...".center(60))
-        print("=" * 60)
-        
-        # Generate story using invoke with input parameter
-        story = chain.invoke(input={
+        print("Generating your story (streaming)...".center(60))
+        print("=" * 60 + "\n")
+
+        story_chunks = []
+
+        # 🔥 STREAMING HERE
+        for chunk in chain.stream({
             "characters": characters_str,
             "place": place,
             "story_type": story_type
-        })
-        
-        return story
-    
-    except Exception as e:
-        return f"Error generating story: {str(e)}\n\nMake sure Ollama is running and gemma:2b model is installed.\nRun: ollama pull gemma:2b"
+        }):
+            print(chunk, end="", flush=True)   # live output
+            story_chunks.append(chunk)
 
+        print("\n" + "=" * 60)
+
+        return "".join(story_chunks)
+
+    except Exception as e:
+        return (
+            f"Error generating story: {str(e)}\n\n"
+            "Make sure Ollama is running and gemma:2b model is installed.\n"
+            "Run: ollama pull gemma:2b"
+        )
 
 def main():
     """Main function"""
