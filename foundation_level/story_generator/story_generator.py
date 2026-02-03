@@ -140,7 +140,7 @@ def main():
         print(f"Place: {place}")
         print(f"Genre: {story_type}")
         print("\n" + "-" * 60)
-        print(story)
+    
         print("-" * 60)
         
         # Ask if user wants to generate another story
