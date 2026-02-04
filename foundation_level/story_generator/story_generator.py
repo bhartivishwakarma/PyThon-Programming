@@ -26,12 +26,19 @@ def get_user_inputs():
     characters = []
     print(f"\nEnter {num_characters} character name(s):")
     for i in range(num_characters):
-        name = input(f"  Character {i+1}: ").strip()
-        if name:
-            characters.append(name)
+        while True:
+            name = input(f"  Character {i+1}: ").strip()
+            if name:
+                characters.append(name)
+                break
+            print("  Character name cannot be empty")
     
     # Get place
-    place = input("\nWhere does the story take place? ").strip()
+    while True:
+        place = input("\nWhere does the story take place? ").strip()
+        if place:
+            break
+        print("Place cannot be empty")
     
     # Get story type
     print("\nWhat type of story?")
@@ -53,8 +60,12 @@ def get_user_inputs():
         '7': 'Comedy'
     }
     
-    choice = input("Enter choice (1-7): ").strip()
-    story_type = story_types.get(choice, 'Adventure')
+    while True:
+        choice = input("Enter choice (1-7): ").strip()
+        story_type = story_types.get(choice)
+        if story_type:
+            break
+        print("Please enter a valid choice (1-7)")
     
     return characters, place, story_type
 
@@ -85,7 +96,8 @@ def generate_story(characters, place, story_type):
         # Initialize Ollama with Gemma:2b model
         llm = OllamaLLM(
             model="gemma:2b",
-            temperature=0.8
+            temperature=0.8,
+            num_predict=512  # Limit output length
         )
 
         # Create prompt template
@@ -103,13 +115,13 @@ def generate_story(characters, place, story_type):
 
         story_chunks = []
 
-        # 🔥 STREAMING HERE
+        # Generate story with streaming
         for chunk in chain.stream({
             "characters": characters_str,
             "place": place,
             "story_type": story_type
         }):
-            print(chunk, end="", flush=True)   # live output
+            print(chunk, end="", flush=True)   # Live output
             story_chunks.append(chunk)
 
         print("\n" + "=" * 60)
@@ -123,16 +135,35 @@ def generate_story(characters, place, story_type):
             "Run: ollama pull gemma:2b"
         )
 
+
+def save_story_to_file(story, characters, place, story_type):
+    """Save the generated story to a text file"""
+    try:
+        filename = f"{story_type.lower()}_story.txt"
+        with open(filename, 'w', encoding='utf-8') as f:
+            f.write("=" * 60 + "\n")
+            f.write(f"{story_type.upper()} STORY\n".center(60))
+            f.write("=" * 60 + "\n\n")
+            f.write(f"Characters: {', '.join(characters)}\n")
+            f.write(f"Place: {place}\n")
+            f.write(f"Genre: {story_type}\n\n")
+            f.write("=" * 60 + "\n\n")
+            f.write(story)
+        
+        print(f"\nStory saved to '{filename}'")
+        return True
+    except Exception as e:
+        print(f"Error saving story: {str(e)}")
+        return False
+
+
 def main():
     """Main function"""
     while True:
         # Get user inputs
         characters, place, story_type = get_user_inputs()
         
-        # Generate story
-        story = generate_story(characters, place, story_type)
-        
-        # Display story
+        # Display story parameters
         print("\n" + "=" * 60)
         print(f"{story_type.upper()} STORY".center(60))
         print("=" * 60)
@@ -140,8 +171,14 @@ def main():
         print(f"Place: {place}")
         print(f"Genre: {story_type}")
         print("\n" + "-" * 60)
-    
-        print("-" * 60)
+        
+        # Generate story
+        story = generate_story(characters, place, story_type)
+        
+        # Ask if user wants to save the story
+        save_option = input("\nWould you like to save this story to a file? (yes/no): ").strip().lower()
+        if save_option in ['yes', 'y']:
+            save_story_to_file(story, characters, place, story_type)
         
         # Ask if user wants to generate another story
         print("\n")
@@ -149,6 +186,7 @@ def main():
         if again not in ['yes', 'y']:
             print("\nThank you for using Story Generator! Goodbye!")
             break
+        print("\n" * 2)  # Add some space between sessions
 
 
 if __name__ == "__main__":
