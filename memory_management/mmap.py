@@ -325,4 +325,3 @@ tracemalloc.stop()
 print(f"File size: {file_size / 1024 / 1024:.1f} MB")
 print(f"Full read memory: {full_read_memory:.2f} MB")
 print(f"Mmap memory: {mmap_memory:.2f} MB")
-print(f"Memory savings: {ful
